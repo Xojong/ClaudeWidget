@@ -13,6 +13,13 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Version>1.0.0</Version>
+    <!-- Bundle only en/ko .NET framework resource languages; the app's own UI
+         strings are unaffected. Saves ~6 MB in the self-contained build. -->
+    <SatelliteResourceLanguages>en;ko</SatelliteResourceLanguages>
+    <!-- Compress managed assemblies in the self-contained single exe
+         (165 MB → 66 MB). Decompressed in memory at startup, so launch is a
+         bit slower; not applied to the framework-dependent build. -->
+    <EnableCompressionInSingleFile Condition="'$(SelfContained)' == 'true'">true</EnableCompressionInSingleFile>
     <!-- WFO0003 tells WinForms apps to move DPI config out of the manifest. This
          is a WPF app; the manifest declaration is the correct mechanism here. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>

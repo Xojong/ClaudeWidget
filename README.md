@@ -172,14 +172,17 @@ dotnet publish src\ClaudeWidget\ClaudeWidget.csproj -c Release -r win-x64 `
 | | 크기 | 첫 실행 | 요구사항 |
 | --- | --- | --- | --- |
 | `framework-dependent` | **0.24 MB** | 0.4초 | .NET 10 Desktop Runtime |
-| `self-contained` | **165 MB** | 2.7초 (임시 폴더 압축 해제) | 없음 |
+| `self-contained` | **66 MB** | 2.7초+α (압축 해제) | 없음 |
 
 `--self-contained false` 형태는 무시되는 경우가 있습니다. 반드시 `-p:SelfContained=false`로 주세요 —
-그렇지 않으면 런타임이 통째로 번들되어 157 MB짜리 "런타임 의존" 빌드가 나옵니다.
+그렇지 않으면 런타임이 통째로 번들된 "런타임 의존" 빌드가 나옵니다.
 
-트리밍(`PublishTrimmed`)은 WPF에서 지원되지 않으므로 켜지 마세요.
-독립 실행 버전은 `-p:EnableCompressionInSingleFile=true`로 크기를 절반 가까이 줄일 수 있지만
-시작이 더 느려집니다.
+독립 실행 버전은 csproj의 `EnableCompressionInSingleFile`(SelfContained일 때만 적용)로
+관리 어셈블리를 압축해 165 MB → 66 MB로 줄였습니다. 대신 시작할 때마다 메모리에서
+압축을 푸는 비용이 붙습니다. .NET 프레임워크 현지화 리소스도 `SatelliteResourceLanguages`로
+영어/한국어만 남겼습니다 (−6 MB, 앱 자체 UI 문자열에는 영향 없음).
+
+트리밍(`PublishTrimmed`)과 NativeAOT는 WPF에서 지원되지 않으므로 켜지 마세요.
 
 ## 구조
 
