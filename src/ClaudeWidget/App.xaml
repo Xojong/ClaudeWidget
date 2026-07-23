@@ -1,0 +1,265 @@
+<Application x:Class="ClaudeWidget.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+
+        <!-- Surface -->
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#14141A" />
+        <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#30FFFFFF" />
+        <SolidColorBrush x:Key="SeparatorBrush" Color="#1FFFFFFF" />
+
+        <!-- Text -->
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F2F2F5" />
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#8C8C97" />
+        <!-- Between primary and muted: readable at 8.5px without competing with
+             the numbers. The muted grey is too dark for text this small. -->
+        <SolidColorBrush x:Key="TextLabelBrush" Color="#BCBCC8" />
+
+        <!-- Gauge -->
+        <SolidColorBrush x:Key="GaugeTrackBrush" Color="#2EFFFFFF" />
+        <SolidColorBrush x:Key="GaugeOkBrush" Color="#4ADE80" />
+        <SolidColorBrush x:Key="GaugeWarnBrush" Color="#FBBF24" />
+        <SolidColorBrush x:Key="GaugeDangerBrush" Color="#F87171" />
+
+        <!-- Menu surface -->
+        <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#F51C1C22" />
+        <SolidColorBrush x:Key="MenuBorderBrush" Color="#33FFFFFF" />
+        <SolidColorBrush x:Key="MenuHighlightBrush" Color="#2EFFFFFF" />
+        <SolidColorBrush x:Key="MenuDisabledBrush" Color="#5C5C66" />
+
+        <!-- Segoe UI Variable Small is Win11's optical size tuned for tiny text;
+             it stays legible at the sizes this widget uses. -->
+        <FontFamily x:Key="UiFont">Segoe UI Variable Small, Segoe UI</FontFamily>
+
+        <!-- ============================================================
+             Dark menu theme.
+
+             WPF's stock MenuItem template draws its submenu popup with system
+             colours, which land light-on-light against this widget's palette.
+             Restyling MenuItem alone doesn't reach that popup, so both roles
+             (plain item and submenu header) get a full ControlTemplate and the
+             popup chrome is declared here explicitly.
+             ============================================================ -->
+
+        <!-- A leaf entry inside a menu -->
+        <ControlTemplate x:Key="DarkMenuItem" TargetType="MenuItem">
+            <Border x:Name="Bd"
+                    Background="Transparent"
+                    CornerRadius="4"
+                    Padding="{TemplateBinding Padding}"
+                    SnapsToDevicePixels="True">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="17" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="Check"
+                               Grid.Column="0"
+                               Text="✓"
+                               FontSize="11"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource GaugeOkBrush}" />
+
+                    <ContentPresenter Grid.Column="1"
+                                      ContentSource="Header"
+                                      RecognizesAccessKey="True"
+                                      VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsChecked" Value="False">
+                    <Setter TargetName="Check" Property="Visibility" Value="Collapsed" />
+                </Trigger>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource MenuHighlightBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource MenuDisabledBrush}" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <!-- An entry that opens a submenu -->
+        <ControlTemplate x:Key="DarkMenuHeader" TargetType="MenuItem">
+            <Border x:Name="Bd"
+                    Background="Transparent"
+                    CornerRadius="4"
+                    Padding="{TemplateBinding Padding}"
+                    SnapsToDevicePixels="True">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="17" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ContentPresenter Grid.Column="1"
+                                      ContentSource="Header"
+                                      RecognizesAccessKey="True"
+                                      VerticalAlignment="Center" />
+
+                    <Path Grid.Column="2"
+                          Data="M0,0 L4,3.5 L0,7 Z"
+                          Fill="{StaticResource TextMutedBrush}"
+                          Margin="10,0,2,0"
+                          VerticalAlignment="Center" />
+
+                    <!-- MenuItem drives this by name. -->
+                    <Popup x:Name="PART_Popup"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                           Placement="Right"
+                           HorizontalOffset="-3"
+                           VerticalOffset="-4"
+                           PopupAnimation="Fade">
+                        <Border Background="{StaticResource MenuBackgroundBrush}"
+                                BorderBrush="{StaticResource MenuBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="3">
+                            <StackPanel IsItemsHost="True"
+                                        KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </Border>
+                    </Popup>
+                </Grid>
+            </Border>
+
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource MenuHighlightBrush}" />
+                </Trigger>
+                <Trigger Property="IsSubmenuOpen" Value="True">
+                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource MenuHighlightBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource MenuDisabledBrush}" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="5,4" />
+            <Setter Property="Template" Value="{StaticResource DarkMenuItem}" />
+            <Style.Triggers>
+                <!-- Items inside a ContextMenu are SubmenuItem / SubmenuHeader,
+                     never TopLevel*, which is menu-bar only. -->
+                <Trigger Property="Role" Value="SubmenuHeader">
+                    <Setter Property="Template" Value="{StaticResource DarkMenuHeader}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="ContextMenu">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="HasDropShadow" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{StaticResource MenuBackgroundBrush}"
+                                BorderBrush="{StaticResource MenuBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="3">
+                            <StackPanel IsItemsHost="True"
+                                        KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Menus resolve separators through this key, not the implicit style. -->
+        <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border Height="1"
+                                Margin="6,4"
+                                Background="{StaticResource SeparatorBrush}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sliders live inside menu items; the stock chrome reads as light there. -->
+        <Style TargetType="Slider">
+            <Setter Property="Foreground" Value="{StaticResource GaugeOkBrush}" />
+            <Setter Property="Background" Value="{StaticResource GaugeTrackBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid VerticalAlignment="Center" Height="18">
+                            <Border Height="3"
+                                    CornerRadius="1.5"
+                                    Background="{TemplateBinding Background}"
+                                    VerticalAlignment="Center" />
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge"
+                                                  Focusable="False"
+                                                  Opacity="0">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="Transparent" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge"
+                                                  Focusable="False"
+                                                  Opacity="0">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="Transparent" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="11" Height="11">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Ellipse Fill="{StaticResource TextPrimaryBrush}" />
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ToolTip">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{StaticResource MenuBackgroundBrush}"
+                                BorderBrush="{StaticResource MenuBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="5"
+                                Padding="6,3">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Application.Resources>
+</Application>

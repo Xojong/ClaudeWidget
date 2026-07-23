@@ -1,0 +1,150 @@
+<Window x:Class="ClaudeWidget.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctrl="clr-namespace:ClaudeWidget.Controls"
+        Title="Claude Usage"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Auto"
+        FontFamily="{StaticResource UiFont}"
+        Topmost="True">
+
+    <Window.Resources>
+
+        <!-- One row: [bar] [percent] [label] -->
+        <DataTemplate x:Key="GaugeRowTemplate">
+            <Grid Height="16" Visibility="{Binding Visibility}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <ctrl:BarGauge Grid.Column="0"
+                               Width="86.4" Height="16"
+                               BarHeight="9"
+                               VerticalAlignment="Center"
+                               Value="{Binding Percent}"
+                               ValueBrush="{Binding ValueBrush}"
+                               TrackBrush="{StaticResource GaugeTrackBrush}" />
+
+                <!-- Number and unit are runs in one TextBlock so they share a
+                     baseline; separate elements at different sizes would sit
+                     centre-aligned and look off. Fixed width + tabular figures
+                     keep the column from twitching as values change. -->
+                <TextBlock Grid.Column="1"
+                           Width="32"
+                           Margin="7,0,0,0"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Typography.NumeralAlignment="Tabular"
+                           Foreground="{StaticResource TextPrimaryBrush}"><Run Text="{Binding PercentText, Mode=OneWay}" FontSize="11.5" FontWeight="SemiBold" /><Run Text="{Binding PercentSuffix, Mode=OneWay}" FontSize="8.5" Foreground="{StaticResource TextLabelBrush}" /></TextBlock>
+
+                <TextBlock Grid.Column="2"
+                           Text="{Binding Label}"
+                           Width="22"
+                           Margin="4,1,0,0"
+                           VerticalAlignment="Center"
+                           FontSize="8.5"
+                           Foreground="{StaticResource TextLabelBrush}"
+                           Visibility="{Binding DataContext.LabelVisibility,
+                                        RelativeSource={RelativeSource AncestorType=Window}}" />
+            </Grid>
+        </DataTemplate>
+
+    </Window.Resources>
+
+    <!-- Background/BorderBrush are replaced at runtime so the opacity setting
+         tints only the surface, leaving text and gauges fully opaque. -->
+    <Border x:Name="RootBorder"
+            Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource SurfaceBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="7,6,7,5"
+            ToolTip="{Binding SourceTooltip}">
+
+        <!-- LayoutTransform (not RenderTransform) so SizeToContent shrinks the
+             window itself when the user scales down. -->
+        <Border.LayoutTransform>
+            <ScaleTransform x:Name="RootScale" ScaleX="1" ScaleY="1" />
+        </Border.LayoutTransform>
+
+        <Grid>
+            <StackPanel Opacity="{Binding ContentOpacity}">
+
+                <ItemsControl ItemsSource="{Binding Rows}"
+                              ItemTemplate="{StaticResource GaugeRowTemplate}" />
+
+                <Border Height="1"
+                        Margin="0,3,0,3"
+                        Background="{StaticResource SeparatorBrush}"
+                        Visibility="{Binding FooterVisibility}" />
+
+                <StackPanel Orientation="Horizontal"
+                            Visibility="{Binding FooterVisibility}">
+
+                    <!-- When the 5-hour window resets -->
+                    <TextBlock Text="{Binding ResetClockText}"
+                               Visibility="{Binding ResetClockVisibility}"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Typography.NumeralAlignment="Tabular"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+
+                    <!-- ...and how long that is from now -->
+                    <TextBlock Text="{Binding RemainingText}"
+                               Visibility="{Binding CountdownVisibility}"
+                               Margin="4,0,0,0"
+                               FontSize="9"
+                               Typography.NumeralAlignment="Tabular"
+                               Foreground="{StaticResource TextMutedBrush}" />
+
+                    <TextBlock Text="{Binding StatusText}"
+                               Visibility="{Binding StatusVisibility}"
+                               ToolTip="{Binding StatusTooltip}"
+                               Margin="5,0,0,0"
+                               FontSize="9.5"
+                               Foreground="{StaticResource GaugeWarnBrush}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Menu affordance. Sits in the corner padding and fades in on hover
+                 so it costs no layout space. Right-click anywhere does the same. -->
+            <Border x:Name="MenuButton"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Width="13" Height="13"
+                    Margin="0,-4,-5,0"
+                    CornerRadius="3"
+                    Background="#33FFFFFF"
+                    Cursor="Hand">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Opacity" Value="0" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=RootBorder}" Value="True">
+                                <Setter Property="Opacity" Value="1" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock Text="⋯"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Margin="0,-3,0,0"
+                           FontSize="11"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           IsHitTestVisible="False" />
+            </Border>
+        </Grid>
+    </Border>
+</Window>
