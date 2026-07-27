@@ -19,7 +19,6 @@ public sealed class WidgetSettings
 
     public bool AlwaysOnTop { get; set; } = true;
     public bool LockPosition { get; set; }
-    public bool AutoRefreshToken { get; set; } = true;
 
     /// <summary>Which model-scoped weekly bucket to surface, matched on the API's display_name.</summary>
     public string ScopedModelName { get; set; } = "Fable";

@@ -16,8 +16,16 @@ public sealed record UsageResult(
 /// <summary>
 /// Fetches and normalises Claude usage from the OAuth usage endpoint — the same
 /// one the Claude web UI uses.
+///
+/// Auth here is strictly read-only: we use whatever access token Claude Code
+/// last wrote and never call the token-refresh endpoint. Refresh tokens are
+/// one-time-use and shared with the CLI through a single file, so a refresh
+/// from this side races the CLI's in-memory copy — the loser presents a spent
+/// token, which the server treats as theft and revokes the whole token family,
+/// logging out both apps. An expired token is answered with the login notice,
+/// not a refresh.
 /// </summary>
-public sealed class UsageClient(HttpClient http, CredentialStore credentials, TokenRefresher refresher)
+public sealed class UsageClient(HttpClient http, CredentialStore credentials)
 {
     private const string UsageEndpoint = "https://api.anthropic.com/api/oauth/usage";
 
@@ -37,7 +45,7 @@ public sealed class UsageClient(HttpClient http, CredentialStore credentials, To
     private DateTimeOffset _throttledUntil = DateTimeOffset.MinValue;
     private UsageSnapshot? _lastSnapshot;
 
-    public async Task<UsageResult> FetchAsync(string scopedModelName, bool autoRefresh, CancellationToken ct)
+    public async Task<UsageResult> FetchAsync(string scopedModelName, CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
         if (now < _throttledUntil || now - _lastFetchAt < MinFetchInterval)
@@ -55,11 +63,12 @@ public sealed class UsageClient(HttpClient http, CredentialStore credentials, To
         if (creds is null)
             return new UsageResult(null, WidgetState.NeedsAuth, UsageStatus.NoToken);
 
-        var token = creds.AccessToken;
+        // Expired by the file's own bookkeeping: skip the doomed round-trip.
+        // Recovery is Claude Code rewriting the file, which a later poll sees.
+        if (creds.IsExpiringSoon(TimeSpan.Zero))
+            return new UsageResult(null, WidgetState.NeedsAuth, UsageStatus.NeedsAuth);
 
-        // Pre-emptive refresh: cheaper than eating a 401 and retrying.
-        if (autoRefresh && creds.IsExpiringSoon(TimeSpan.FromMinutes(5)) && refresher.CanAttempt)
-            token = await refresher.TryRefreshAsync(creds, ct).ConfigureAwait(false) ?? token;
+        var token = creds.AccessToken;
 
         var (response, error) = await SendAsync(token, ct).ConfigureAwait(false);
         if (error is not null) return error;
@@ -70,22 +79,10 @@ public sealed class UsageClient(HttpClient http, CredentialStore credentials, To
 
             // Claude Code may have rotated the token underneath us since we read it.
             var reread = credentials.Read();
-            if (reread is not null && reread.AccessToken != token)
-            {
-                token = reread.AccessToken;
-            }
-            else if (autoRefresh && reread is not null)
-            {
-                var refreshed = await refresher.TryRefreshAsync(reread, ct).ConfigureAwait(false);
-                if (refreshed is null)
-                    return new UsageResult(null, WidgetState.NeedsAuth, UsageStatus.NeedsAuth);
-                token = refreshed;
-            }
-            else
-            {
+            if (reread is null || reread.AccessToken == token)
                 return new UsageResult(null, WidgetState.NeedsAuth, UsageStatus.NeedsAuth);
-            }
 
+            token = reread.AccessToken;
             (response, error) = await SendAsync(token, ct).ConfigureAwait(false);
             if (error is not null) return error;
 

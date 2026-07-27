@@ -65,7 +65,10 @@ ClaudeWidget.exe --demo    # API 호출 없이 예시 수치로 렌더링
 
 ### 1순위 — `%USERPROFILE%\.claude\usage-history.jsonl`
 
-Claude Code가 세션이 살아있는 동안 **약 60초마다** 한 줄씩 덧붙이는 로그입니다.
+**별도의 사용량 로거가 있을 때만 존재하는 파일입니다.** Claude Code 자체는 이 파일을
+쓰지 않습니다 — 주기적으로 usage API를 폴링해 이 경로에 남기는 외부 도구(예: Python 기반
+사용량 모니터)를 쓰고 있다면 위젯이 그 기록을 재활용합니다. 파일이 없거나 오래됐으면
+그냥 2순위(API)로 내려가므로, 로거가 없어도 위젯은 정상 동작합니다.
 필요한 세 버킷이 그대로 들어있습니다:
 
 ```json
@@ -91,8 +94,8 @@ GET https://api.anthropic.com/api/oauth/usage
 
 ### 왜 로컬 파일이 우선인가
 
-**이 엔드포인트는 토큰 단위로 레이트 리밋이 걸리고, 그 쿼터를 이미 위 60초 주기
-기록기가 쓰고 있습니다.** 위젯이 별도로 폴링을 하나 더 붙이면 한도를 넘깁니다.
+**이 엔드포인트는 토큰 단위로 레이트 리밋이 걸리고, 로거가 돌고 있다면 그 쿼터를
+이미 로거가 쓰고 있습니다.** 위젯이 별도로 폴링을 하나 더 붙이면 한도를 넘깁니다.
 
 실제로 관측된 내용입니다 — 수동 호출 몇 번을 얹자마자 429가 시작됐고,
 `usage-history.jsonl`의 기록이 **429가 시작된 바로 그 시각에 멈췄습니다.**
@@ -126,25 +129,22 @@ GET https://api.anthropic.com/api/oauth/usage
 
 위젯 전체에 마우스를 올리면 데이터 기준 시각과 출처가 툴팁으로 나옵니다.
 
-## 토큰 갱신
+## 토큰 — 위젯은 읽기만 합니다
 
 액세스 토큰은 약 8시간마다 만료됩니다. Claude Code를 쓰는 동안은 CLI가
 `.credentials.json`을 갱신하므로 위젯은 매 폴링마다 파일을 다시 읽는 것만으로 유효한 토큰을 얻습니다.
 
-파일이 오래된 경우에만 직접 갱신을 시도합니다:
+**위젯은 토큰을 직접 재발급하지 않습니다. refresh token은 읽지도 않습니다.**
+OAuth refresh token은 1회용(회전식)인데 CLI와 파일 하나로 공유됩니다. 초기 버전은
+만료 시 직접 재발급 후 파일에 되써주는 방식이었지만, CLI가 메모리에 들고 있던 예전
+refresh token으로 재발급을 시도하는 순간 서버가 이를 토큰 탈취로 간주해 **토큰 계열
+전체를 무효화했고, 위젯과 CLI 양쪽 로그인이 함께 풀리는 사고**가 실제로 발생했습니다.
+재발급 권한이 두 프로그램에 있는 한 이 경합은 타이밍으로 피할 수 없어서, 재발급은
+CLI의 전유물로 두고 위젯은 순수 소비자로 남습니다.
 
-```
-POST https://platform.claude.com/v1/oauth/token
-{ "grant_type": "refresh_token", "refresh_token": "…", "client_id": "9d1c250a-…" }
-```
-
-**갱신에 성공하면 `.credentials.json`에 다시 씁니다.** OAuth refresh token은 회전하기
-때문에, 갱신 후 저장하지 않으면 Claude Code에 남아있는 예전 refresh token이 무효화되어
-**CLI 로그인 자체가 깨집니다.** 쓰기는 임시 파일 + `File.Replace`로 원자적으로 처리하고
-`.credentials.json.bak`을 남깁니다. 파일의 다른 필드는 그대로 보존됩니다.
-
-갱신 호출은 최소 30분 간격으로 제한됩니다 (refresh 엔드포인트의 429 / Cloudflare 차단 사례:
-claude-code #38248, #47754).
+토큰이 만료되면 위젯은 네트워크 호출 없이 리셋 시각 자리에 **"Claude Code 로그인 필요"**
+안내를 띄웁니다. Claude Code를 한 번 열면 CLI가 파일을 갱신하고, 위젯은 다음 폴링에서
+자동으로 복구됩니다.
 
 ## 알려진 제약
 
@@ -195,8 +195,7 @@ src/ClaudeWidget/
 │  ├─ UsageProvider.cs        출처 결정 (로컬 우선 → API 폴백)
 │  ├─ UsageHistoryReader.cs   usage-history.jsonl tail 읽기
 │  ├─ UsageClient.cs          OAuth API + 스로틀 · 429 처리
-│  ├─ CredentialStore.cs      토큰 읽기 / 원자적 write-back
-│  ├─ TokenRefresher.cs       refresh_token 그랜트
+│  ├─ CredentialStore.cs      토큰 읽기 (읽기 전용 — 재발급 없음)
 │  └─ SettingsStore.cs        설정 · 시작 프로그램 등록
 │  └─ Strings.cs             한국어/영어 UI 텍스트
 ├─ Controls/BarGauge.cs       알약형 막대 게이지 (OnRender 직접 그리기)

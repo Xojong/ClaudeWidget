@@ -119,8 +119,7 @@ public partial class MainWindow : Window
         _inFlight = new CancellationTokenSource();
         var token = _inFlight.Token;
 
-        var result = await App.Provider.GetAsync(
-            _settings.ScopedModelName, _settings.AutoRefreshToken, token);
+        var result = await App.Provider.GetAsync(_settings.ScopedModelName, token);
 
         if (token.IsCancellationRequested) return;
 

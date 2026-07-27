@@ -15,8 +15,7 @@ public partial class App : System.Windows.Application
     // services that take it.
     public static HttpClient Http { get; } = CreateHttpClient();
     public static CredentialStore Credentials { get; } = new();
-    public static TokenRefresher Refresher { get; } = new(Http, Credentials);
-    public static UsageClient Usage { get; } = new(Http, Credentials, Refresher);
+    public static UsageClient Usage { get; } = new(Http, Credentials);
     public static UsageHistoryReader History { get; } = new();
     public static UsageProvider Provider { get; } = new(History, Usage);
     public static SettingsStore Settings { get; } = new();
@@ -147,7 +146,7 @@ public partial class App : System.Windows.Application
             : $"local entry : {local.RecordedAt.LocalDateTime:HH:mm:ss} " +
               $"({(int)local.Age.TotalSeconds}s ago, fresh={local.Age <= UsageProvider.FreshEnough})");
 
-        var result = await Provider.GetAsync(settings.ScopedModelName, settings.AutoRefreshToken, CancellationToken.None);
+        var result = await Provider.GetAsync(settings.ScopedModelName, CancellationToken.None);
         Console.WriteLine($"state       : {result.State} / {result.Status}" +
                           (result.Detail != 0 ? $" ({result.Detail})" : ""));
 

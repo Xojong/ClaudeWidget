@@ -21,21 +21,25 @@ public sealed class UsageProvider(UsageHistoryReader history, UsageClient api)
     /// </summary>
     public static readonly TimeSpan FreshEnough = TimeSpan.FromMinutes(3);
 
-    public async Task<UsageResult> GetAsync(string scopedModelName, bool autoRefresh, CancellationToken ct)
+    public async Task<UsageResult> GetAsync(string scopedModelName, CancellationToken ct)
     {
         var local = history.TryReadLatest();
 
         if (local is not null && local.Age <= FreshEnough)
             return new UsageResult(local.Snapshot, WidgetState.Ok);
 
-        var remote = await api.FetchAsync(scopedModelName, autoRefresh, ct).ConfigureAwait(false);
+        var remote = await api.FetchAsync(scopedModelName, ct).ConfigureAwait(false);
         if (remote.Snapshot is not null) return remote;
 
         // Network unavailable or rate limited. A stale local reading still beats
         // an empty widget — surface it, flagged as stale so the UI dims it.
+        // Auth failures keep their own status: they need the user to act, and
+        // burying them under "old local log" would hide the only useful signal.
         if (local is not null)
-            return new UsageResult(
-                local.Snapshot, WidgetState.Stale, UsageStatus.StaleLocal, (int)local.Age.TotalMinutes);
+            return remote.Status is UsageStatus.NeedsAuth or UsageStatus.NoToken
+                ? new UsageResult(local.Snapshot, WidgetState.Stale, remote.Status)
+                : new UsageResult(
+                    local.Snapshot, WidgetState.Stale, UsageStatus.StaleLocal, (int)local.Age.TotalMinutes);
 
         return remote;
     }

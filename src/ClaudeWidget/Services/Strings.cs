@@ -54,6 +54,10 @@ public static class Strings
 
     // --- status ---
     public static string Loading => Pick("불러오는 중", "Loading");
+    /// <summary>Shown in the reset-clock slot — the one fix only the user can do.
+    /// Names Claude Code explicitly: someone who installed just the widget has no
+    /// other way to know which app owns the login.</summary>
+    public static string LoginNeeded => Pick("Claude Code 로그인 필요", "Sign in to Claude Code");
     public static string NeedsAuthDetail =>
         Pick("재인증 필요 — Claude Code에서 다시 로그인하세요",
              "Re-authentication required — sign in again in Claude Code");

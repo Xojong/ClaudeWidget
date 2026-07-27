@@ -162,6 +162,24 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// True when the fix is the user's to make — sign in again in Claude Code.
+    /// Covers both the bare NeedsAuth state and stale data whose refresh is
+    /// failing on auth rather than on something transient like the network.
+    /// </summary>
+    private bool NeedsLogin =>
+        State is WidgetState.NeedsAuth ||
+        (State is WidgetState.Stale && _status is UsageStatus.NeedsAuth or UsageStatus.NoToken);
+
+    /// <summary>Everything whose rendering depends on <see cref="NeedsLogin"/>.</summary>
+    private void RaiseLoginNotice()
+    {
+        Raise(nameof(ResetClockText));
+        Raise(nameof(ResetClockVisibility));
+        Raise(nameof(CountdownVisibility));
+        Raise(nameof(FooterVisibility));
+    }
+
     /// <summary>Stale data stays on screen but recedes, so a silent failure is still visible.</summary>
     public double ContentOpacity => State is WidgetState.Stale ? 0.45 : 1.0;
 
@@ -227,6 +245,9 @@ public sealed class MainViewModel : ObservableObject
         Raise(nameof(StatusText));
         Raise(nameof(StatusTooltip));
         Raise(nameof(SourceTooltip));
+        // The login notice is produced by the getter, not stored, so
+        // UpdateCountdown's change detection won't re-render it on its own.
+        Raise(nameof(ResetClockText));
         UpdateCountdown();
     }
 
@@ -237,9 +258,11 @@ public sealed class MainViewModel : ObservableObject
         private set => Set(ref _remainingText, value);
     }
 
+    /// <summary>The reset clock, or the login notice when that's what actually matters —
+    /// a reset time computed from numbers we can no longer refresh would just be wrong.</summary>
     public string ResetClockText
     {
-        get => _resetClockText;
+        get => NeedsLogin ? Strings.LoginNeeded : _resetClockText;
         private set => Set(ref _resetClockText, value);
     }
 
@@ -251,11 +274,17 @@ public sealed class MainViewModel : ObservableObject
     private bool _showResetClock = true;
 
     public Visibility LabelVisibility => _showLabels ? Visibility.Visible : Visibility.Collapsed;
-    public Visibility CountdownVisibility => _showRemaining ? Visibility.Visible : Visibility.Collapsed;
-    public Visibility ResetClockVisibility => _showResetClock ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>The countdown makes way for the login notice — "(-:-- 남음)" beside it is noise.</summary>
+    public Visibility CountdownVisibility =>
+        _showRemaining && !NeedsLogin ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>The notice borrows this slot, so it must show even when the clock itself is off.</summary>
+    public Visibility ResetClockVisibility =>
+        _showResetClock || NeedsLogin ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility FooterVisibility =>
-        _showRemaining || _showResetClock || StatusVisibility is Visibility.Visible
+        _showRemaining || _showResetClock || NeedsLogin || StatusVisibility is Visibility.Visible
             ? Visibility.Visible
             : Visibility.Collapsed;
 
@@ -305,6 +334,10 @@ public sealed class MainViewModel : ObservableObject
 
         Raise(nameof(StatusTooltip));
         Raise(nameof(SourceTooltip));
+        // _status can flip the login notice without State changing value
+        // (e.g. Stale-from-network becoming Stale-from-auth), so the State
+        // setter alone can't be trusted to re-render it.
+        RaiseLoginNotice();
         UpdateCountdown();
     }
 
