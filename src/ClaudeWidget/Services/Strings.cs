@@ -51,6 +51,15 @@ public static class Strings
     public static string Exit => Pick("종료", "Exit");
     public static string MenuTooltip => Pick("메뉴", "Menu");
 
+    // --- about ---
+    public static string About => Pick("정보", "About");
+    public static string AboutTagline =>
+        Pick("Windows용 초소형 always-on-top Claude 사용량 위젯",
+             "A tiny always-on-top Claude usage widget for Windows");
+    public static string Developer => Pick("개발자", "Developer");
+    public static string Repository => Pick("저장소", "Repository");
+    public static string Close => Pick("닫기", "Close");
+
     // --- footer ---
     /// <summary>The countdown beside the reset clock, e.g. "1:12 남음" / "1:12 left".</summary>
     public static string Remaining(string clock) => Pick($"{clock} 남음", $"{clock} left");

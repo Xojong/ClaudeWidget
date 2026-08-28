@@ -47,7 +47,7 @@ dotnet run --project src\ClaudeWidget
 | 트레이 아이콘 좌클릭 | 화면 밖으로 놓친 위젯 회수 |
 
 메뉴: 새로고침 주기(1~5분) · 크기 · 투명도 · 표시 항목 토글 · **언어(한국어/English)** · 항상 위 ·
-위치 잠금 · 시작 프로그램 등록
+위치 잠금 · 시작 프로그램 등록 · 정보(이름 · 버전 · 개발자 · 저장소 링크)
 
 언어는 재시작 없이 즉시 바뀝니다. 메뉴 텍스트와 `(1:04 남음)` / `(1:04 left)`, 상태 툴팁이 대상입니다.
 서비스 계층은 완성된 문장 대신 상태 코드(`UsageStatus`)를 반환하고 표시 시점에 번역하므로,
@@ -205,7 +205,10 @@ src/ClaudeWidget/
 │  └─ Strings.cs             한국어/영어 UI 텍스트
 ├─ Controls/BarGauge.cs       알약형 막대 게이지 (OnRender 직접 그리기)
 ├─ ViewModels/MainViewModel.cs
-└─ MainWindow.xaml            투명 창 · 드래그 · 스케일 · 메뉴
+├─ MainWindow.xaml            투명 창 · 드래그 · 스케일 · 메뉴
+└─ AboutWindow.xaml           정보 창 (이름 · 버전 · 개발자 · 저장소)
 ```
+
+버전은 `ClaudeWidget.csproj`의 `<Version>` 하나만 올리면 정보 창과 exe 파일 속성에 함께 반영됩니다.
 
 설정 저장 위치: `%APPDATA%\ClaudeWidget\settings.json`

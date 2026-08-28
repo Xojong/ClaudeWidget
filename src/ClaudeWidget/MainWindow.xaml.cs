@@ -264,6 +264,13 @@ public partial class MainWindow : Window
         ShowMenu();
     }
 
+    /// <summary>Modal so it can take the keyboard (Esc/Enter) that the widget itself never holds.</summary>
+    private void ShowAbout()
+    {
+        var about = new AboutWindow { Owner = this, Topmost = Topmost };
+        about.ShowDialog();
+    }
+
     private void ShowMenu()
     {
         // The widget never activates on its own (no taskbar button, never
@@ -360,6 +367,9 @@ public partial class MainWindow : Window
         menu.Items.Add(Item(Strings.RunAtStartup, () =>
             SettingsStore.SetRunAtStartup(!SettingsStore.IsRunAtStartupEnabled()),
             isChecked: SettingsStore.IsRunAtStartupEnabled()));
+
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Item(Strings.About, ShowAbout));
 
         menu.Items.Add(new Separator());
         menu.Items.Add(Item(Strings.Exit, Close));

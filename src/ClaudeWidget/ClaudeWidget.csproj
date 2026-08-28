@@ -12,7 +12,12 @@
     <RootNamespace>ClaudeWidget</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
+    <Authors>Xojong</Authors>
+    <Company>Xojong</Company>
+    <Product>ClaudeWidget</Product>
+    <Copyright>© 2026 Xojong</Copyright>
+    <RepositoryUrl>https://github.com/Xojong/ClaudeWidget</RepositoryUrl>
     <!-- Bundle only en/ko .NET framework resource languages; the app's own UI
          strings are unaffected. Saves ~6 MB in the self-contained build. -->
     <SatelliteResourceLanguages>en;ko</SatelliteResourceLanguages>

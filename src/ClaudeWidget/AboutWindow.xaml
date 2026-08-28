@@ -1,0 +1,126 @@
+<Window x:Class="ClaudeWidget.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ClaudeWidget"
+        Title="ClaudeWidget"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterOwner"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Auto"
+        FontFamily="{StaticResource UiFont}">
+
+    <Window.Resources>
+        <!-- Stock Button chrome is light; this one matches the menu surface. -->
+        <Style x:Key="DialogButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Padding" Value="14,4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{StaticResource MenuHighlightBrush}"
+                                BorderBrush="{StaticResource MenuBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#47FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1FFFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Margin" Value="0,0,14,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        </Style>
+
+        <Style x:Key="FieldValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{StaticResource MenuBackgroundBrush}"
+            BorderBrush="{StaticResource MenuBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="18,14,18,12">
+        <StackPanel MinWidth="230">
+
+            <TextBlock x:Name="NameText"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TextPrimaryBrush}" />
+            <TextBlock x:Name="VersionText"
+                       Margin="0,1,0,0"
+                       FontSize="11"
+                       Typography.NumeralAlignment="Tabular"
+                       Foreground="{StaticResource TextMutedBrush}" />
+            <TextBlock x:Name="TaglineText"
+                       Margin="0,8,0,0"
+                       MaxWidth="280"
+                       HorizontalAlignment="Left"
+                       TextWrapping="Wrap"
+                       FontSize="11"
+                       Foreground="{StaticResource TextLabelBrush}" />
+
+            <Border Height="1"
+                    Margin="0,12,0,10"
+                    Background="{StaticResource SeparatorBrush}" />
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20" />
+                    <RowDefinition Height="20" />
+                </Grid.RowDefinitions>
+
+                <TextBlock x:Name="DeveloperLabel" Grid.Row="0" Grid.Column="0" Style="{StaticResource FieldLabel}" />
+                <TextBlock x:Name="DeveloperText" Grid.Row="0" Grid.Column="1" Style="{StaticResource FieldValue}" />
+
+                <TextBlock x:Name="RepoLabel" Grid.Row="1" Grid.Column="0" Style="{StaticResource FieldLabel}" />
+                <TextBlock Grid.Row="1" Grid.Column="1"
+                           Style="{StaticResource FieldValue}"
+                           ToolTip="{x:Static local:AboutWindow.RepositoryUrl}">
+                    <Hyperlink Click="OnRepoClick"
+                               Foreground="{StaticResource GaugeOkBrush}"
+                               TextDecorations="{x:Null}"
+                               Cursor="Hand"><Run x:Name="RepoText" /></Hyperlink>
+                </TextBlock>
+            </Grid>
+
+            <Button x:Name="CloseButton"
+                    Style="{StaticResource DialogButton}"
+                    HorizontalAlignment="Right"
+                    Margin="0,14,0,0"
+                    IsDefault="True"
+                    IsCancel="True"
+                    Click="OnCloseClick" />
+        </StackPanel>
+    </Border>
+</Window>
