@@ -328,6 +328,8 @@ public partial class MainWindow : Window
             isChecked: _settings.ShowRemaining));
         display.Items.Add(Item(Strings.ResetClock, () => ToggleDisplay(s => s.ShowResetClock = !s.ShowResetClock),
             isChecked: _settings.ShowResetClock));
+        display.Items.Add(Item(Strings.WeeklyResetClock, () => ToggleDisplay(s => s.ShowWeeklyReset = !s.ShowWeeklyReset),
+            isChecked: _settings.ShowWeeklyReset));
         display.Items.Add(Item(Strings.ModelRow(_settings.ScopedModelName),
             () => ToggleDisplay(s => s.ShowScopedRow = !s.ShowScopedRow),
             isChecked: _settings.ShowScopedRow));

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace ClaudeWidget.Services;
 
 public enum AppLanguage
@@ -37,7 +39,8 @@ public static class Strings
     public static string Display => Pick("표시", "Display");
     public static string Labels => Pick("라벨 (5H/7D/Fbl)", "Labels (5H/7D/Fbl)");
     public static string TimeRemaining => Pick("남은 시간", "Time remaining");
-    public static string ResetClock => Pick("리셋 시각", "Reset time");
+    public static string ResetClock => Pick("5H 리셋 시각", "5H reset time");
+    public static string WeeklyResetClock => Pick("주간 리셋 시각 (7D/Fbl)", "Weekly reset time (7D/Fbl)");
     public static string ModelRow(string model) => Pick($"{model} 행", $"{model} row");
     public static string AlwaysOnTop => Pick("항상 위", "Always on top");
     public static string LockPosition => Pick("위치 잠금", "Lock position");
@@ -51,6 +54,13 @@ public static class Strings
     // --- footer ---
     /// <summary>The countdown beside the reset clock, e.g. "1:12 남음" / "1:12 left".</summary>
     public static string Remaining(string clock) => Pick($"{clock} 남음", $"{clock} left");
+
+    private static readonly CultureInfo KoreanCulture = CultureInfo.GetCultureInfo("ko-KR");
+    private static readonly CultureInfo EnglishCulture = CultureInfo.GetCultureInfo("en-US");
+
+    /// <summary>A weekly reset as weekday + clock, e.g. "화 21:00" / "Tue 21:00". Expects local time.</summary>
+    public static string WeekdayClock(DateTimeOffset local) =>
+        local.ToString("ddd HH:mm", Language == AppLanguage.English ? EnglishCulture : KoreanCulture);
 
     // --- status ---
     public static string Loading => Pick("불러오는 중", "Loading");

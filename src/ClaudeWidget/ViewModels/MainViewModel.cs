@@ -132,6 +132,11 @@ public sealed class MainViewModel : ObservableObject
     private DateTimeOffset? _fetchedAt;
     private string _remainingText = "";
     private string _resetClockText = "--:--";
+    private string _weeklyResetLabel = "";
+    private string _weeklyResetText = "--:--";
+    private string _scopedResetLabel = "";
+    private string _scopedResetText = "";
+    private bool _scopedResetShown;
 
     public GaugeRowViewModel SessionRow { get; } = new();
     public GaugeRowViewModel WeeklyRow { get; } = new();
@@ -145,6 +150,7 @@ public sealed class MainViewModel : ObservableObject
         SessionRow.Update(null, "5H");
         WeeklyRow.Update(null, "7D");
         ScopedRow.Update(null, "Fbl");
+        UpdateWeeklyResets();
     }
 
     public WidgetState State
@@ -177,6 +183,7 @@ public sealed class MainViewModel : ObservableObject
         Raise(nameof(ResetClockText));
         Raise(nameof(ResetClockVisibility));
         Raise(nameof(CountdownVisibility));
+        Raise(nameof(WeeklyResetVisibility));
         Raise(nameof(FooterVisibility));
     }
 
@@ -249,6 +256,7 @@ public sealed class MainViewModel : ObservableObject
         // UpdateCountdown's change detection won't re-render it on its own.
         Raise(nameof(ResetClockText));
         UpdateCountdown();
+        UpdateWeeklyResets();   // weekday names are localised
     }
 
     /// <summary>Reads as "(2:11 남음)" beside the reset clock, or standalone if the clock is hidden.</summary>
@@ -266,14 +274,57 @@ public sealed class MainViewModel : ObservableObject
         private set => Set(ref _resetClockText, value);
     }
 
+    // --- Weekly resets: the right half of the footer. "7D·Fbl 화 21:00" on one
+    // line when both weekly windows reset together (the common case); a second
+    // "Fbl" line only when they actually differ. ---
+
+    /// <summary>"7D", or "7D·Fbl" when the scoped line has been folded into this one.</summary>
+    public string WeeklyResetLabel
+    {
+        get => _weeklyResetLabel;
+        private set => Set(ref _weeklyResetLabel, value);
+    }
+
+    /// <summary>Weekday + clock, e.g. "화 21:00"; "--:--" until a reset time is known.</summary>
+    public string WeeklyResetText
+    {
+        get => _weeklyResetText;
+        private set => Set(ref _weeklyResetText, value);
+    }
+
+    public string ScopedResetLabel
+    {
+        get => _scopedResetLabel;
+        private set => Set(ref _scopedResetLabel, value);
+    }
+
+    public string ScopedResetText
+    {
+        get => _scopedResetText;
+        private set => Set(ref _scopedResetText, value);
+    }
+
     // --- Display options (driven by settings; each one the user turns off is
     // height or width the widget stops occupying) ---
 
     private bool _showLabels = true;
     private bool _showRemaining = true;
     private bool _showResetClock = true;
+    private bool _showWeeklyReset = true;
 
     public Visibility LabelVisibility => _showLabels ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>Hidden with the login notice, which needs the whole footer width to itself.</summary>
+    public Visibility WeeklyResetVisibility =>
+        _showWeeklyReset && !NeedsLogin ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>The second weekly line — only when the scoped window resets at a different time.</summary>
+    public Visibility ScopedResetVisibility =>
+        _scopedResetShown ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>Its label additionally follows the row labels' toggle.</summary>
+    public Visibility ScopedResetLabelVisibility =>
+        _scopedResetShown && _showLabels ? Visibility.Visible : Visibility.Collapsed;
 
     /// <summary>The countdown makes way for the login notice — "(-:-- 남음)" beside it is noise.</summary>
     public Visibility CountdownVisibility =>
@@ -284,7 +335,7 @@ public sealed class MainViewModel : ObservableObject
         _showResetClock || NeedsLogin ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility FooterVisibility =>
-        _showRemaining || _showResetClock || NeedsLogin || StatusVisibility is Visibility.Visible
+        _showRemaining || _showResetClock || _showWeeklyReset || NeedsLogin || StatusVisibility is Visibility.Visible
             ? Visibility.Visible
             : Visibility.Collapsed;
 
@@ -293,15 +344,19 @@ public sealed class MainViewModel : ObservableObject
         _showLabels = settings.ShowLabels;
         _showRemaining = settings.ShowRemaining;
         _showResetClock = settings.ShowResetClock;
+        _showWeeklyReset = settings.ShowWeeklyReset;
         ScopedRow.IsVisible = settings.ShowScopedRow;
 
         Raise(nameof(LabelVisibility));
         Raise(nameof(CountdownVisibility));
         Raise(nameof(ResetClockVisibility));
+        Raise(nameof(WeeklyResetVisibility));
         Raise(nameof(FooterVisibility));
 
         // The parentheses depend on whether the clock is showing.
         UpdateCountdown();
+        // The scoped line follows the scoped row, and its label the labels toggle.
+        UpdateWeeklyResets();
     }
 
     public void Apply(UsageResult result)
@@ -339,6 +394,35 @@ public sealed class MainViewModel : ObservableObject
         // setter alone can't be trusted to re-render it.
         RaiseLoginNotice();
         UpdateCountdown();
+        UpdateWeeklyResets();
+    }
+
+    /// <summary>
+    /// Formats the weekly reset lines. The two weekly windows reset at the same
+    /// moment in practice (both are 7-day windows anchored to the same plan), so
+    /// showing "화 21:00" twice would spend a whole line saying nothing; they
+    /// are folded into "7D·Fbl 화 21:00" whenever the displayed text matches and
+    /// split only when it doesn't. Labels come from the rows so the model
+    /// abbreviation stays consistent.
+    /// </summary>
+    private void UpdateWeeklyResets()
+    {
+        var weekly = Format(_snapshot?.WeeklyAll?.ResetsAt);
+        var scoped = ScopedRow.IsVisible ? Format(_snapshot?.Scoped?.ResetsAt) : null;
+
+        var folded = scoped is not null && scoped == weekly;
+
+        WeeklyResetLabel = folded ? $"{WeeklyRow.Label}·{ScopedRow.Label}" : WeeklyRow.Label;
+        WeeklyResetText = weekly ?? "--:--";
+
+        _scopedResetShown = scoped is not null && !folded;
+        ScopedResetLabel = ScopedRow.Label;
+        ScopedResetText = scoped ?? "";
+        Raise(nameof(ScopedResetVisibility));
+        Raise(nameof(ScopedResetLabelVisibility));
+
+        static string? Format(DateTimeOffset? resetsAt) =>
+            resetsAt is { } at ? Strings.WeekdayClock(at.ToLocalTime()) : null;
     }
 
     /// <summary>Pure local arithmetic against the cached reset time — never hits the network.</summary>

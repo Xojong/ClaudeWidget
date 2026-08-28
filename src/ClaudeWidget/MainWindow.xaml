@@ -89,32 +89,89 @@
                         Background="{StaticResource SeparatorBrush}"
                         Visibility="{Binding FooterVisibility}" />
 
-                <StackPanel Orientation="Horizontal"
-                            Visibility="{Binding FooterVisibility}">
+                <!-- Footer: [5H clock + countdown] ........ [weekly resets]
+                     The left half takes the star column; the weekly block hugs
+                     the right edge under the label column. Both are narrower
+                     than the gauge rows, so the footer never sets the width. -->
+                <Grid Visibility="{Binding FooterVisibility}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                    <!-- When the 5-hour window resets -->
-                    <TextBlock Text="{Binding ResetClockText}"
-                               Visibility="{Binding ResetClockVisibility}"
-                               FontSize="10"
-                               FontWeight="SemiBold"
-                               Typography.NumeralAlignment="Tabular"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center">
 
-                    <!-- ...and how long that is from now -->
-                    <TextBlock Text="{Binding RemainingText}"
-                               Visibility="{Binding CountdownVisibility}"
-                               Margin="4,0,0,0"
-                               FontSize="9"
-                               Typography.NumeralAlignment="Tabular"
-                               Foreground="{StaticResource TextMutedBrush}" />
+                        <!-- When the 5-hour window resets -->
+                        <TextBlock Text="{Binding ResetClockText}"
+                                   Visibility="{Binding ResetClockVisibility}"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Typography.NumeralAlignment="Tabular"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
 
-                    <TextBlock Text="{Binding StatusText}"
-                               Visibility="{Binding StatusVisibility}"
-                               ToolTip="{Binding StatusTooltip}"
-                               Margin="5,0,0,0"
-                               FontSize="9.5"
-                               Foreground="{StaticResource GaugeWarnBrush}" />
-                </StackPanel>
+                        <!-- ...and how long that is from now -->
+                        <TextBlock Text="{Binding RemainingText}"
+                                   Visibility="{Binding CountdownVisibility}"
+                                   Margin="4,0,0,0"
+                                   FontSize="9"
+                                   Typography.NumeralAlignment="Tabular"
+                                   Foreground="{StaticResource TextMutedBrush}" />
+
+                        <TextBlock Text="{Binding StatusText}"
+                                   Visibility="{Binding StatusVisibility}"
+                                   ToolTip="{Binding StatusTooltip}"
+                                   Margin="5,0,0,0"
+                                   FontSize="9.5"
+                                   Foreground="{StaticResource GaugeWarnBrush}" />
+                    </StackPanel>
+
+                    <!-- Weekly resets as weekday + clock. One line ("7D·Fbl 화 21:00")
+                         while both weekly windows reset together; the second row
+                         appears only when the scoped window differs. -->
+                    <Grid Grid.Column="1"
+                          Margin="6,0,0,0"
+                          VerticalAlignment="Center"
+                          Visibility="{Binding WeeklyResetVisibility}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   Text="{Binding WeeklyResetLabel}"
+                                   Visibility="{Binding LabelVisibility}"
+                                   Margin="0,0,3,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="8.5"
+                                   Foreground="{StaticResource TextLabelBrush}" />
+                        <TextBlock Grid.Row="0" Grid.Column="1"
+                                   Text="{Binding WeeklyResetText}"
+                                   VerticalAlignment="Center"
+                                   FontSize="9"
+                                   Typography.NumeralAlignment="Tabular"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                   Text="{Binding ScopedResetLabel}"
+                                   Visibility="{Binding ScopedResetLabelVisibility}"
+                                   Margin="0,0,3,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="8.5"
+                                   Foreground="{StaticResource TextLabelBrush}" />
+                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                   Text="{Binding ScopedResetText}"
+                                   Visibility="{Binding ScopedResetVisibility}"
+                                   VerticalAlignment="Center"
+                                   FontSize="9"
+                                   Typography.NumeralAlignment="Tabular"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                    </Grid>
+                </Grid>
             </StackPanel>
 
             <!-- Menu affordance. Sits in the corner padding and fades in on hover

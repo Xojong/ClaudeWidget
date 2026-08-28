@@ -15,6 +15,7 @@ public sealed class WidgetSettings
     public bool ShowLabels { get; set; } = true;
     public bool ShowRemaining { get; set; } = true;
     public bool ShowResetClock { get; set; } = true;
+    public bool ShowWeeklyReset { get; set; } = true;
     public bool ShowScopedRow { get; set; } = true;
 
     public bool AlwaysOnTop { get; set; } = true;
